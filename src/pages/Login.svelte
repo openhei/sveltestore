@@ -1,13 +1,53 @@
 <script>
+  import loginUser from "../strapi/loginUser";
+  import registerUser from "../strapi/registerUser";
+  import { navigate } from "svelte-routing";
+  import globalStore from "../stores//globalStore.js";
+
   let email = "";
   let password = "";
   let username = "default username";
 
   let isMember = true;
-  $: isEmpty = !name || !password || !username;
 
-  function toggleMember() {}
-  async function handleSubmit() {}
+  //add alert
+  $: isEmpty = !email || !password || !username || $globalStore.alert;
+
+  //toggle
+  function toggleMember() {
+    isMember = !isMember;
+    if (!isMember) {
+      username = "";
+    } else {
+      username = "default username";
+    }
+  }
+  async function handleSubmit() {
+    globalStore.toggleItem("alert", true, "loading data...  please wait!");
+    let user;
+    if (isMember) {
+      user = await loginUser({ email, password });
+    } else {
+      user = await registerUser({ email, password, username });
+    }
+
+    if (user) {
+      navigate("/products");
+      //add alert
+      globalStore.toggleItem(
+        "alert",
+        true,
+        "welcome to shopping madness my friend"
+      );
+      return;
+    }
+    globalStore.toggleItem(
+      "alert",
+      true,
+      "there was an error!, please try again",
+      true
+    );
+  }
 </script>
 
 <section class="form">
@@ -15,7 +55,7 @@
   <h2 class="section-title">
     {#if isMember}Sign in{:else}Register{/if}
   </h2>
-  <form class="login-form" on:submit:preventDefault={handleSubmit}>
+  <form class="login-form" on:submit|preventDefault={handleSubmit}>
     <div class="form-control">
       <label for="email">email</label>
       <input type="email" id="email" bind:value={email} />
@@ -46,7 +86,7 @@
         <button type="button" on:click={toggleMember}>click here</button>
       </p>
     {:else}
-      <p class="regiser-link">
+      <p class="register-link">
         Already memeber?
         <button type="button" on:click={toggleMember}>click here</button>
       </p>
